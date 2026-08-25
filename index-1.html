@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Mirror</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16131c">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,400&family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #f4ede1;
+    --charcoal: #16131c;
+    --charcoal-2: #201b28;
+    --gold: #d9a84e;
+    --gold-soft: #e8c98a;
+    --rose: #e69a9a;
+    --glass: rgba(244, 237, 225, 0.06);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse at 50% -10%, #2a2233 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 100%, #241a24 0%, transparent 50%),
+      var(--charcoal);
+    color: var(--ink);
+    font-family: 'Sora', sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .stage {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8vh 20px 6vh;
+    text-align: center;
+    position: relative;
+  }
+
+  .eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+    opacity: 0.75;
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    margin: 0 0 8px;
+    letter-spacing: 0.01em;
+  }
+
+  .sub {
+    font-size: 0.95rem;
+    color: rgba(244,237,225,0.55);
+    max-width: 380px;
+    margin: 0 0 22px;
+    line-height: 1.6;
+  }
+
+  .verse {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 0.92rem;
+    color: var(--gold-soft);
+    opacity: 0.85;
+    max-width: 340px;
+    line-height: 1.6;
+    margin: 0 0 44px;
+  }
+
+  .verse cite {
+    display: block;
+    font-family: 'Sora', sans-serif;
+    font-style: normal;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.6;
+    margin-top: 8px;
+  }
+
+  /* --- Mirror frame: the signature element --- */
+  .mirror-wrap {
+    position: relative;
+    width: min(72vw, 340px);
+    aspect-ratio: 3/4;
+    margin-bottom: 40px;
+  }
+
+  .mirror-frame {
+    position: absolute;
+    inset: -14px;
+    border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%;
+    background: linear-gradient(155deg, #f0d9a0, #c8963f 35%, #8a641f 60%, #e8c98a 85%, #c8963f);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.2) inset,
+      0 20px 60px rgba(0,0,0,0.55),
+      0 0 40px rgba(217,168,78,0.15);
+    z-index: 1;
+  }
+
+  .mirror-frame::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%;
+    background: linear-gradient(155deg, #3a2f1a, #16131c 30%);
+    box-shadow: 0 0 0 1px rgba(232,201,138,0.25) inset;
+  }
+
+  .glass {
+    position: absolute;
+    inset: 14px;
+    border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%;
+    overflow: hidden;
+    background: #0d0b11;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    opacity: 0;
+    transition: opacity 1.1s ease;
+  }
+  video.live { opacity: 1; }
+
+  .glass-sheen {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, rgba(255,255,255,0.10) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.25) 100%);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  .placeholder {
+    color: rgba(244,237,225,0.28);
+    font-size: 0.82rem;
+    max-width: 70%;
+    line-height: 1.5;
+    padding: 20px;
+    z-index: 2;
+  }
+
+  .placeholder svg { margin-bottom: 10px; opacity: 0.6; }
+
+  /* --- Controls --- */
+  .btn {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+    padding: 14px 32px;
+    border-radius: 999px;
+    border: 1px solid rgba(232,201,138,0.4);
+    background: transparent;
+    color: var(--gold-soft);
+    cursor: pointer;
+    transition: all 0.35s ease;
+  }
+  .btn:hover {
+    background: rgba(232,201,138,0.1);
+    border-color: var(--gold-soft);
+  }
+  .btn:focus-visible {
+    outline: 2px solid var(--gold-soft);
+    outline-offset: 3px;
+  }
+  .btn.hidden { display: none; }
+
+  .error {
+    color: var(--rose);
+    font-size: 0.82rem;
+    max-width: 320px;
+    margin-top: 18px;
+    line-height: 1.5;
+  }
+
+  /* --- Compliment --- */
+  .compliment-zone {
+    min-height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 420px;
+    padding: 0 20px;
+  }
+
+  .compliment {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(1.15rem, 3.4vw, 1.55rem);
+    line-height: 1.5;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 1.2s ease, transform 1.2s ease;
+  }
+  .compliment.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .compliment .quote-mark {
+    color: var(--gold);
+    opacity: 0.6;
+  }
+
+  .timer-note {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(244,237,225,0.3);
+    margin-top: 6px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    video, .compliment { transition: none; }
+  }
+
+  footer {
+    position: absolute;
+    bottom: 22px;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: rgba(244,237,225,0.25);
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="eyebrow">A Small Ritual</div>
+  <h1>The Mirror</h1>
+  <p class="sub">Open your camera. Look at yourself the way someone who adores you would.</p>
+
+  <p class="verse">"I will praise thee; for I am fearfully and wonderfully made: marvellous are thy works; and that my soul knoweth right well."<cite>Psalm 139:14</cite></p>
+
+  <div class="mirror-wrap">
+    <div class="mirror-frame"></div>
+    <div class="glass">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="glass-sheen"></div>
+      <div class="placeholder" id="placeholder">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+          <path d="M23 7l-7 5 7 5V7z"/>
+          <rect x="1" y="5" width="15" height="14" rx="2"/>
+        </svg>
+        <div>Your camera stays on your device.<br>Nothing is saved, sent, or stored.</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn" id="startBtn">Open the mirror</button>
+  <p class="error" id="errorMsg" style="display:none;"></p>
+
+  <div class="compliment-zone">
+    <p class="compliment" id="compliment"></p>
+  </div>
+  <div class="timer-note" id="timerNote" style="display:none;">a new one, every few seconds</div>
+
+  <footer>no login · nothing saved · just for you</footer>
+</div>
+
+<script>
+  const compliments = [
+    "You carry yourself like someone who knows exactly where they're going.",
+    "That's a face that's gotten through hard things and kept its warmth.",
+    "There's a steadiness in you that people notice, even when you don't.",
+    "You have the kind of presence that makes rooms feel a little more okay.",
+    "Whatever you're building, you're the right person to be building it.",
+    "You've earned every bit of the confidence you're about to feel.",
+    "The way you keep showing up for things is quietly remarkable.",
+    "You don't need permission to take up space. You already have it.",
+    "There's real strength behind that expression. It shows.",
+    "You are exactly enough, right now, as you are.",
+    "People remember how you make them feel. That's a gift.",
+    "You've survived every hard day so far. That's undefeated, actually.",
+    "That's the face of someone who follows through.",
+    "You're doing better than the voice in your head gives you credit for.",
+    "Something about you makes people feel safe being themselves.",
+    "You have taste, instincts, and timing — trust them today.",
+    "That reflection belongs to someone worth knowing.",
+    "You're allowed to be proud of how far you've come."
+  ];
+
+  const video = document.getElementById('video');
+  const placeholder = document.getElementById('placeholder');
+  const startBtn = document.getElementById('startBtn');
+  const errorMsg = document.getElementById('errorMsg');
+  const complimentEl = document.getElementById('compliment');
+  const timerNote = document.getElementById('timerNote');
+
+  let usedIndices = [];
+  let rotateTimer = null;
+
+  function nextCompliment() {
+    if (usedIndices.length === compliments.length) usedIndices = [];
+    let idx;
+    do { idx = Math.floor(Math.random() * compliments.length); }
+    while (usedIndices.includes(idx));
+    usedIndices.push(idx);
+
+    complimentEl.classList.remove('show');
+    setTimeout(() => {
+      complimentEl.innerHTML = '<span class="quote-mark">“</span>' + compliments[idx] + '<span class="quote-mark">”</span>';
+      complimentEl.classList.add('show');
+    }, 400);
+  }
+
+  async function openMirror() {
+    errorMsg.style.display = 'none';
+    startBtn.textContent = 'Opening…';
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      video.srcObject = stream;
+      video.classList.add('live');
+      placeholder.style.display = 'none';
+      startBtn.classList.add('hidden');
+      timerNote.style.display = 'block';
+
+      nextCompliment();
+      rotateTimer = setInterval(nextCompliment, 6000);
+    } catch (err) {
+      startBtn.textContent = 'Open the mirror';
+      errorMsg.style.display = 'block';
+      errorMsg.textContent = "Couldn't access your camera — check your browser's permission settings and try again. (Or just take the compliments on faith.)";
+      nextCompliment();
+      rotateTimer = setInterval(nextCompliment, 6000);
+    }
+  }
+
+  startBtn.addEventListener('click', openMirror);
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+</script>
+
+</body>
+</html>
