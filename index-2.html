@@ -4,10 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Mirror</title>
-<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#16131c">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,400&family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
@@ -272,9 +269,9 @@
 <body>
 
 <div class="stage">
-  <div class="banner"><img src="banner.jpg" alt=""></div>
+  <div class="banner"><img src="22665.png" alt="Banner"></div>
   <div class="eyebrow">VANGOTHIE KINGDOM</div>
-  <h1>KAL MAI TEH</h1></h1>
+  <h1>KAL MAI TEH</h1>
   <p class="sub">Open your camera. Look at yourself the way someone who adores you would.</p>
 
   <p class="verse">"I will praise thee; for I am fearfully and wonderfully made: marvellous are thy works; and that my soul knoweth right well."<cite>Psalm 139:14</cite></p>
@@ -302,7 +299,7 @@
   </div>
   <div class="timer-note" id="timerNote" style="display:none;">a new one, every few seconds</div>
 
-  <footer>AZ25IVCOPYRIGHT2026· MI Â WEBSITE · MI Â DIARY</footer>
+  <footer>AZ25IVCOPYRIGHT· MI Â WEBSITE · MI Â DIARY</footer>
 </div>
 
 <script>
@@ -401,12 +398,6 @@
   }
 
   startBtn.addEventListener('click', openMirror);
-
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    });
-  }
 </script>
 
 </body>
