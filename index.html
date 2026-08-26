@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Mirror</title>
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#16131c">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,400&family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
@@ -43,6 +46,29 @@
     padding: 8vh 20px 6vh;
     text-align: center;
     position: relative;
+  }
+
+  .banner {
+    width: 100%;
+    max-width: 420px;
+    aspect-ratio: 4/5;
+    border-radius: 18px;
+    overflow: hidden;
+    margin-bottom: 28px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    position: relative;
+  }
+  .banner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(22,19,28,0) 55%, rgba(22,19,28,0.9) 100%);
   }
 
   .eyebrow {
@@ -246,8 +272,9 @@
 <body>
 
 <div class="stage">
-  <div class="eyebrow">HAN IN EN TEH LEM</div>
-  <h1>EARTH ANGEL</h1>
+  <div class="banner"><img src="banner.jpg" alt=""></div>
+  <div class="eyebrow">VANGOTHIE KINGDOM</div>
+  <h1>KAL MAI TEH</h1>
   <p class="sub">Open your camera. Look at yourself the way someone who adores you would.</p>
 
   <p class="verse">"I will praise thee; for I am fearfully and wonderfully made: marvellous are thy works; and that my soul knoweth right well."<cite>Psalm 139:14</cite></p>
@@ -275,12 +302,29 @@
   </div>
   <div class="timer-note" id="timerNote" style="display:none;">a new one, every few seconds</div>
 
-  <footer>AZ25ivCOPYRIGHT2026 · MI Â WEBSITE · MI Â DIARY</footer>
+  <footer>AZ25IVALRIGHTRESERVE2026· MI Â WEBSITE · MI Â DIARY</footer>
 </div>
 
 <script>
   const compliments = [
-    "Rangvamual CEO.",
+    "You carry yourself like someone who knows exactly where they're going.",
+    "That's a face that's gotten through hard things and kept its warmth.",
+    "There's a steadiness in you that people notice, even when you don't.",
+    "You have the kind of presence that makes rooms feel a little more okay.",
+    "Whatever you're building, you're the right person to be building it.",
+    "You've earned every bit of the confidence you're about to feel.",
+    "The way you keep showing up for things is quietly remarkable.",
+    "You don't need permission to take up space. You already have it.",
+    "There's real strength behind that expression. It shows.",
+    "You are exactly enough, right now, as you are.",
+    "People remember how you make them feel. That's a gift.",
+    "You've survived every hard day so far. That's undefeated, actually.",
+    "That's the face of someone who follows through.",
+    "You're doing better than the voice in your head gives you credit for.",
+    "Something about you makes people feel safe being themselves.",
+    "You have taste, instincts, and timing — trust them today.",
+    "That reflection belongs to someone worth knowing.",
+    "You're allowed to be proud of how far you'com."
     "Theihnghil chhung che hi a rei dawn hle mai.",
     "A reilo tiro?.",
     "I chung chang hi CHATGPT ka hrilh thin.",
@@ -307,25 +351,7 @@
     "In en tawh suh phone achhia ang.",
     "Vango Kal Mai Teh.",
     "Nauuu Patil i ni em.",
-    "Nau ka rai.",
-    "You carry yourself like someone who knows exactly where they're going.",
-    "That's a face that's gotten through hard things and kept its warmth.",
-    "There's a steadiness in you that people notice, even when you don't.",
-    "You have the kind of presence that makes rooms feel a little more okay.",
-    "Whatever you're building, you're the right person to be building it.",
-    "You've earned every bit of the confidence you're about to feel.",
-    "The way you keep showing up for things is quietly remarkable.",
-    "You don't need permission to take up space. You already have it.",
-    "There's real strength behind that expression. It shows.",
-    "You are exactly enough, right now, as you are.",
-    "People remember how you make them feel. That's a gift.",
-    "You've survived every hard day so far. That's undefeated, actually.",
-    "That's the face of someone who follows through.",
-    "You're doing better than the voice in your head gives you credit for.",
-    "Something about you makes people feel safe being themselves.",
-    "You have taste, instincts, and timing — trust them today.",
-    "That reflection belongs to someone worth knowing.",
-    "You're allowed to be proud of how far you'com."
+    "Nau ka rai."
   ];
 
   const video = document.getElementById('video');
@@ -375,6 +401,12 @@
   }
 
   startBtn.addEventListener('click', openMirror);
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
 </script>
 
 </body>
