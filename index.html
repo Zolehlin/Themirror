@@ -256,6 +256,78 @@
     margin-top: 6px;
   }
 
+  /* --- Love question overlay --- */
+  .love-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(13,11,17,0.92);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .love-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .love-card {
+    text-align: center;
+    padding: 20px;
+  }
+  .love-question {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: clamp(1.4rem, 5vw, 2rem);
+    margin-bottom: 34px;
+    color: var(--ink);
+  }
+  .love-btns {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    position: relative;
+    min-height: 60px;
+  }
+  .love-btn {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.95rem;
+    padding: 14px 34px;
+    border-radius: 999px;
+    border: 1px solid rgba(232,201,138,0.4);
+    background: transparent;
+    color: var(--gold-soft);
+    cursor: pointer;
+  }
+  .love-btn.yes {
+    background: rgba(232,201,138,0.15);
+  }
+  .love-btn.no {
+    position: relative;
+    transition: transform 0.25s ease;
+  }
+
+  .reveal-msg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: clamp(1.3rem, 5vw, 1.9rem);
+    color: var(--gold-soft);
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    z-index: 4;
+    padding: 0 30px;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  }
+  .reveal-msg.show { opacity: 1; }
+
   @media (prefers-reduced-motion: reduce) {
     video, .compliment { transition: none; }
   }
@@ -273,8 +345,8 @@
 
 <div class="stage">
   <div class="banner"><img src="banner.jpg" alt=""></div>
-  <div class="eyebrow">VANGOTHIE KINGDOM</div>
-  <h1>KAL MAI TEH</h1>
+  <div class="eyebrow">A Small Ritual</div>
+  <h1>The Mirror</h1>
   <p class="sub">Open your camera. Look at yourself the way someone who adores you would.</p>
 
   <p class="verse">"I will praise thee; for I am fearfully and wonderfully made: marvellous are thy works; and that my soul knoweth right well."<cite>Psalm 139:14</cite></p>
@@ -291,6 +363,17 @@
         </svg>
         <div>Your camera stays on your device.<br>Nothing is saved, sent, or stored.</div>
       </div>
+      <p class="reveal-msg" id="revealMsg">I can see all this Darnnn 👀</p>
+    </div>
+  </div>
+
+  <div class="love-overlay" id="loveOverlay">
+    <div class="love-card">
+      <p class="love-question" id="loveQuestion">Do you love me?</p>
+      <div class="love-btns" id="loveBtns">
+        <button class="love-btn yes" id="loveYes">Yes</button>
+        <button class="love-btn no" id="loveNo">No</button>
+      </div>
     </div>
   </div>
 
@@ -302,7 +385,7 @@
   </div>
   <div class="timer-note" id="timerNote" style="display:none;">a new one, every few seconds</div>
 
-  <footer>AZ25IVCOPYRIGHT2026 · MI Â WEBSITE </footer>
+  <footer>no login · nothing saved · just for you</footer>
 </div>
 
 <script>
@@ -346,6 +429,7 @@
     "I chhelo tak zet.",
     "Inkhawm ngailo hmel i pu.",
     "I sual hmel hle mai.",
+    "Beiraaa bialnuu hlui kha ini maw.",
     "Awiio klasss ve klass 20.",
     "In en tawh suh phone achhia ang.",
     "Vango Kal Mai Teh.",
@@ -359,6 +443,11 @@
   const errorMsg = document.getElementById('errorMsg');
   const complimentEl = document.getElementById('compliment');
   const timerNote = document.getElementById('timerNote');
+  const loveOverlay = document.getElementById('loveOverlay');
+  const loveYes = document.getElementById('loveYes');
+  const loveNo = document.getElementById('loveNo');
+  const loveBtns = document.getElementById('loveBtns');
+  const revealMsg = document.getElementById('revealMsg');
 
   let usedIndices = [];
   let rotateTimer = null;
@@ -377,6 +466,31 @@
     }, 400);
   }
 
+  function dodgeNoButton() {
+    const maxX = 70, maxY = 24;
+    const x = (Math.random() * maxX * 2) - maxX;
+    const y = (Math.random() * maxY * 2) - maxY;
+    loveNo.style.transform = `translate(${x}px, ${y}px)`;
+  }
+
+  loveNo.addEventListener('click', dodgeNoButton);
+  loveNo.addEventListener('touchstart', (e) => { e.preventDefault(); dodgeNoButton(); }, { passive: false });
+
+  loveYes.addEventListener('click', () => {
+    loveOverlay.classList.remove('active');
+    revealMsg.classList.add('show');
+    startComplimentLoop();
+    setTimeout(() => {
+      revealMsg.classList.remove('show');
+    }, 7000);
+  });
+
+  function startComplimentLoop() {
+    timerNote.style.display = 'block';
+    nextCompliment();
+    rotateTimer = setInterval(nextCompliment, 6000);
+  }
+
   async function openMirror() {
     errorMsg.style.display = 'none';
     startBtn.textContent = 'Opening…';
@@ -386,16 +500,12 @@
       video.classList.add('live');
       placeholder.style.display = 'none';
       startBtn.classList.add('hidden');
-      timerNote.style.display = 'block';
-
-      nextCompliment();
-      rotateTimer = setInterval(nextCompliment, 6000);
+      loveOverlay.classList.add('active');
     } catch (err) {
       startBtn.textContent = 'Open the mirror';
       errorMsg.style.display = 'block';
       errorMsg.textContent = "Couldn't access your camera — check your browser's permission settings and try again. (Or just take the compliments on faith.)";
-      nextCompliment();
-      rotateTimer = setInterval(nextCompliment, 6000);
+      loveOverlay.classList.add('active');
     }
   }
 
