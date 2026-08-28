@@ -190,6 +190,45 @@
   }
   .scan-overlay.active { opacity: 1; }
 
+  /* --- Corner brackets & readout panel --- */
+  .hud-corners {
+    position: absolute;
+    inset: 14px;
+    z-index: 4;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+  .hud-corners.active { opacity: 1; }
+  .hc {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--gold-soft);
+  }
+  .hc.tl { top: 0; left: 0; border-right: none; border-bottom: none; }
+  .hc.tr { top: 0; right: 0; border-left: none; border-bottom: none; }
+  .hc.bl { bottom: 0; left: 0; border-right: none; border-top: none; }
+  .hc.br { bottom: 0; right: 0; border-left: none; border-top: none; }
+
+  .hud-readout {
+    position: absolute;
+    left: 18px;
+    bottom: 18px;
+    z-index: 4;
+    font-family: 'Sora', monospace;
+    font-size: 0.6rem;
+    line-height: 1.6;
+    color: #cfeeff;
+    text-shadow: 0 0 6px rgba(111,214,255,0.5);
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+    white-space: pre-line;
+    letter-spacing: 0.03em;
+  }
+  .hud-readout.active { opacity: 0.85; }
+
   .placeholder {
     color: rgba(244,237,225,0.28);
     font-size: 0.82rem;
@@ -359,8 +398,8 @@
 
 <div class="stage">
   <div class="banner"><img src="banner.jpg" alt=""></div>
-  <div class="eyebrow">VANGOTHIE KINGDOM</div>
-  <h1>MI Â DIARY</h1>
+  <div class="eyebrow">A Small Ritual</div>
+  <h1>The Mirror</h1>
   <p class="sub">Open your camera. Look at yourself the way someone who adores you would.</p>
 
   <p class="verse">"I will praise thee; for I am fearfully and wonderfully made: marvellous are thy works; and that my soul knoweth right well."<cite>Psalm 139:14</cite></p>
@@ -371,6 +410,11 @@
       <video id="video" autoplay playsinline muted></video>
       <div class="glass-sheen"></div>
       <canvas class="scan-overlay" id="scanCanvas"></canvas>
+      <div class="hud-corners" id="hudCorners">
+        <span class="hc tl"></span><span class="hc tr"></span>
+        <span class="hc bl"></span><span class="hc br"></span>
+      </div>
+      <div class="hud-readout" id="hudReadout"></div>
       <div class="placeholder" id="placeholder">
         <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
           <path d="M23 7l-7 5 7 5V7z"/>
@@ -400,7 +444,7 @@
   </div>
   <div class="timer-note" id="timerNote" style="display:none;">a new one, every few seconds</div>
 
-  <footer>AZ25IVCOPYRIGHT2026· MI BO WEB · ©️AlrightReserved</footer>
+  <footer>no login · nothing saved · just for you</footer>
 </div>
 
 <script>
@@ -495,6 +539,8 @@
     loveOverlay.classList.remove('active');
     revealMsg.classList.add('show');
     scanCanvas.classList.add('active');
+    hudCorners.classList.add('active');
+    hudReadout.classList.add('active');
     startFaceTracking();
     startComplimentLoop();
     setTimeout(() => {
@@ -511,16 +557,53 @@
   /* ---------- Real face-tracked scan HUD ---------- */
   const scanCanvas = document.getElementById('scanCanvas');
   const scanCtx = scanCanvas.getContext('2d');
+  const hudCorners = document.getElementById('hudCorners');
+  const hudReadout = document.getElementById('hudReadout');
   let faceModelsReady = false;
   let faceLoopRunning = false;
-  const labelPool = ['0.9284','2.7443','5.2857','3.1429','6.0714','4.5714','1.6180','8.2001','0.4286','7.1143'];
-  const liveLabels = {};
+  let scanStart = null;
+  let lastLocked = false;
 
-  function pickLabel(key) {
-    if (!liveLabels[key] || Math.random() < 0.15) {
-      liveLabels[key] = labelPool[Math.floor(Math.random() * labelPool.length)];
-    }
-    return liveLabels[key];
+  const readoutLines = [
+    "STATUS: IRREPLACEABLE",
+    "MATCH: 100%",
+    "LANDMARKS: 68 LOCKED",
+    "SIGNAL: CLEAR",
+    "RESULT: SOMEONE WORTH KEEPING",
+    "CONFIDENCE: FULL",
+    "NOTE: KEEP LOOKING AT THIS ONE"
+  ];
+  let readoutIdx = 0;
+
+  function updateReadout(locked) {
+    const t = scanStart ? ((Date.now() - scanStart) / 1000).toFixed(1) : '0.0';
+    const line1 = locked ? "LOCK: ACQUIRED" : "SCANNING...";
+    const line2 = `TIME: ${t}s`;
+    const line3 = readoutLines[readoutIdx % readoutLines.length];
+    hudReadout.textContent = `${line1}\n${line2}\n${line3}`;
+  }
+
+  // Full 68-point contour groups (standard dlib layout)
+  const CONTOURS = {
+    jaw: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
+    browR: [17,18,19,20,21],
+    browL: [22,23,24,25,26],
+    noseBridge: [27,28,29,30],
+    noseLower: [31,32,33,34,35],
+    eyeR: [36,37,38,39,40,41,36],
+    eyeL: [42,43,44,45,46,47,42],
+    mouthOuter: [48,49,50,51,52,53,54,55,56,57,58,59,48],
+    mouthInner: [60,61,62,63,64,65,66,67,60]
+  };
+  // extra cross-feature lines for a triangulated, mesh-like feel
+  const CROSS_LINES = [
+    [21,27],[22,27],[36,27],[45,27],[31,48],[35,54],
+    [48,57],[54,57],[8,57],[3,31],[13,35],[19,37],[24,44],
+    [0,36],[16,45],[6,48],[10,54]
+  ];
+
+  function mapAll(pts) {
+    return pts.map(p => mapPoint(p.x, p.y));
   }
 
   async function loadFaceModels() {
@@ -554,71 +637,69 @@
     const offY = (ch - vh * scale) / 2;
     const px = x * scale + offX;
     const py = y * scale + offY;
-    // mirror horizontally to match the mirrored video
-    return [cw - px, py];
+    return [cw - px, py]; // mirror horizontally to match the mirrored video
   }
 
   function drawHUD(landmarks) {
     scanCtx.clearRect(0, 0, scanCanvas.width, scanCanvas.height);
-    if (!landmarks) return;
+    if (!landmarks) {
+      updateReadout(false);
+      return;
+    }
 
     const pts = landmarks.positions;
-    const idx = {
-      leftEye: 37, rightEye: 44, noseTip: 30,
-      mouthL: 48, mouthR: 54, chin: 8,
-      jawL: 2, jawR: 14, browL: 19, browR: 24
-    };
-    const mapped = {};
-    Object.entries(idx).forEach(([k, i]) => {
-      const p = pts[i];
-      mapped[k] = mapPoint(p.x, p.y);
-    });
+    const mp = mapAll(pts);
 
-    // connecting mesh lines
-    scanCtx.strokeStyle = 'rgba(159,227,255,0.4)';
-    scanCtx.lineWidth = 0.8;
-    const lines = [
-      ['leftEye','noseTip'], ['rightEye','noseTip'],
-      ['noseTip','mouthL'], ['noseTip','mouthR'],
-      ['mouthL','chin'], ['mouthR','chin'],
-      ['leftEye','browL'], ['rightEye','browR'],
-      ['jawL','mouthL'], ['jawR','mouthR']
-    ];
-    lines.forEach(([a,b]) => {
+    scanCtx.lineWidth = 0.7;
+    scanCtx.strokeStyle = 'rgba(159,227,255,0.38)';
+
+    // draw each contour as a connected line
+    Object.values(CONTOURS).forEach(group => {
       scanCtx.beginPath();
-      scanCtx.moveTo(mapped[a][0], mapped[a][1]);
-      scanCtx.lineTo(mapped[b][0], mapped[b][1]);
+      group.forEach((idx, i) => {
+        const [x, y] = mp[idx];
+        if (i === 0) scanCtx.moveTo(x, y); else scanCtx.lineTo(x, y);
+      });
       scanCtx.stroke();
     });
 
-    // boxes + labels at key points
-    const colors = { blue:'#6fd6ff', gold:'#e8c98a', rose:'#ff8fa3' };
-    const boxSpecs = [
-      ['leftEye','blue'], ['rightEye','blue'],
-      ['noseTip','gold'], ['mouthL','rose'],
-      ['mouthR','rose'], ['chin','blue'],
-      ['jawL','gold'], ['jawR','gold']
-    ];
-    scanCtx.font = '9px Sora, monospace';
-    boxSpecs.forEach(([key, color]) => {
-      const [x, y] = mapped[key];
-      const w = 40, h = 16;
-      scanCtx.strokeStyle = colors[color];
-      scanCtx.globalAlpha = 0.55 + Math.random() * 0.2;
-      scanCtx.strokeRect(x - w/2, y - h/2 - 14, w, h);
-      scanCtx.fillStyle = '#cfeeff';
-      scanCtx.globalAlpha = 0.75;
-      scanCtx.fillText(pickLabel(key), x - w/2 + 3, y - 20);
-      scanCtx.globalAlpha = 1;
-      // small crosshair dot at the actual landmark
+    // cross lines for the triangulated look
+    scanCtx.strokeStyle = 'rgba(232,201,138,0.28)';
+    CROSS_LINES.forEach(([a, b]) => {
       scanCtx.beginPath();
-      scanCtx.arc(x, y, 1.6, 0, Math.PI * 2);
-      scanCtx.fillStyle = colors[color];
+      scanCtx.moveTo(mp[a][0], mp[a][1]);
+      scanCtx.lineTo(mp[b][0], mp[b][1]);
+      scanCtx.stroke();
+    });
+
+    // node dots at every landmark
+    scanCtx.fillStyle = 'rgba(207,238,255,0.85)';
+    mp.forEach(([x, y]) => {
+      scanCtx.beginPath();
+      scanCtx.arc(x, y, 1.1, 0, Math.PI * 2);
       scanCtx.fill();
     });
 
-    // overall face bounding box
-    const box = landmarks.detection ? landmarks.detection.box : null;
+    // a few flickering labeled boxes at key features
+    const labelPts = { leftEye: 37, rightEye: 44, noseTip: 30, mouth: 51, chin: 8 };
+    const colors = ['#6fd6ff', '#e8c98a', '#ff8fa3'];
+    scanCtx.font = '9px Sora, monospace';
+    Object.values(labelPts).forEach((idx, i) => {
+      const [x, y] = mp[idx];
+      const w = 38, h = 15;
+      const c = colors[i % colors.length];
+      scanCtx.strokeStyle = c;
+      scanCtx.globalAlpha = 0.5 + Math.random() * 0.3;
+      scanCtx.strokeRect(x - w/2, y - h/2 - 16, w, h);
+      scanCtx.globalAlpha = 0.8;
+      scanCtx.fillStyle = '#cfeeff';
+      scanCtx.fillText((Math.random()*9).toFixed(4), x - w/2 + 2, y - 22);
+      scanCtx.globalAlpha = 1;
+    });
+
+    if (!scanStart) scanStart = Date.now();
+    if (!lastLocked) { lastLocked = true; }
+    updateReadout(true);
   }
 
   async function faceLoop() {
@@ -633,13 +714,16 @@
       } catch (e) {
         drawHUD(null);
       }
+    } else {
+      updateReadout(false);
     }
-    setTimeout(faceLoop, 180);
+    setTimeout(faceLoop, 160);
   }
 
   async function startFaceTracking() {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
+    setInterval(() => { readoutIdx++; }, 2200);
     await loadFaceModels();
     faceLoopRunning = true;
     faceLoop();
