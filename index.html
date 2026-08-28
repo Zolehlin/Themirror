@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Mirror</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16131c">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,400&family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #f4ede1;
+    --charcoal: #16131c;
+    --charcoal-2: #201b28;
+    --gold: #d9a84e;
+    --gold-soft: #e8c98a;
+    --rose: #e69a9a;
+    --glass: rgba(244, 237, 225, 0.06);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse at 50% -10%, #2a2233 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 100%, #241a24 0%, transparent 50%),
+      var(--charcoal);
+    color: var(--ink);
+    font-family: 'Sora', sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .stage {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8vh 20px 6vh;
+    text-align: center;
+    position: relative;
+  }
+
+  .banner {
+    width: 100%;
+    max-width: 420px;
+    aspect-ratio: 4/5;
+    border-radius: 18px;
+    overflow: hidden;
+    margin-bottom: 28px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    position: relative;
+  }
+  .banner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(22,19,28,0) 55%, rgba(22,19,28,0.9) 100%);
+  }
+
+  .eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+    opacity: 0.75;
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    margin: 0 0 8px;
+    letter-spacing: 0.01em;
+  }
+
+  .sub {
+    font-size: 0.95rem;
+    color: rgba(244,237,225,0.55);
+    max-width: 380px;
+    margin: 0 0 22px;
+    line-height: 1.6;
+  }
+
+  .verse {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 0.92rem;
+    color: var(--gold-soft);
+    opacity: 0.85;
+    max-width: 340px;
+    line-height: 1.6;
+    margin: 0 0 44px;
+  }
+
+  .verse cite {
+    display: block;
+    font-family: 'Sora', sans-serif;
+    font-style: normal;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.6;
+    margin-top: 8px;
+  }
+
+  /* --- Mirror frame: the signature element --- */
+  .mirror-wrap {
+    position: relative;
+    width: min(72vw, 340px);
+    aspect-ratio: 3/4;
+    margin-bottom: 40px;
+  }
+
+  .mirror-frame {
+    position: absolute;
+    inset: -14px;
+    border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%;
+    background: linear-gradient(155deg, #f0d9a0, #c8963f 35%, #8a641f 60%, #e8c98a 85%, #c8963f);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.2) inset,
+      0 20px 60px rgba(0,0,0,0.55),
+      0 0 40px rgba(217,168,78,0.15);
+    z-index: 1;
+  }
+
+  .mirror-frame::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%;
+    background: linear-gradient(155deg, #3a2f1a, #16131c 30%);
+    box-shadow: 0 0 0 1px rgba(232,201,138,0.25) inset;
+  }
+
+  .glass {
+    position: absolute;
+    inset: 14px;
+    border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%;
+    overflow: hidden;
+    background: #0d0b11;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    opacity: 0;
+    transition: opacity 1.1s ease;
+  }
+  video.live { opacity: 1; }
+
+  .glass-sheen {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, rgba(255,255,255,0.10) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.25) 100%);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  /* --- Digital scan HUD overlay --- */
+  .scan-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1s ease;
+    overflow: hidden;
+  }
+  .scan-overlay.active { opacity: 1; }
+
+  .scan-overlay svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .scan-box {
+    fill: none;
+    stroke: #6fd6ff;
+    stroke-width: 1;
+    opacity: 0.55;
+    animation: scanFlicker 3.2s ease-in-out infinite;
+  }
+  .scan-box.gold { stroke: var(--gold-soft); }
+  .scan-box.rose { stroke: #ff8fa3; }
+
+  .scan-label {
+    font-family: 'Sora', monospace;
+    font-size: 6.5px;
+    fill: #9fe3ff;
+    opacity: 0.7;
+  }
+
+  .scan-line {
+    stroke: rgba(159, 227, 255, 0.35);
+    stroke-width: 0.6;
+  }
+
+  .scan-sweep {
+    position: absolute;
+    left: 0; right: 0;
+    height: 40%;
+    background: linear-gradient(180deg, transparent, rgba(111,214,255,0.12), transparent);
+    animation: sweepDown 4s linear infinite;
+  }
+
+  @keyframes scanFlicker {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.75; }
+  }
+  @keyframes sweepDown {
+    0% { top: -40%; }
+    100% { top: 100%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scan-box, .scan-sweep { animation: none; }
+  }
+
+  .placeholder {
+    color: rgba(244,237,225,0.28);
+    font-size: 0.82rem;
+    max-width: 70%;
+    line-height: 1.5;
+    padding: 20px;
+    z-index: 2;
+  }
+
+  .placeholder svg { margin-bottom: 10px; opacity: 0.6; }
+
+  /* --- Controls --- */
+  .btn {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+    padding: 14px 32px;
+    border-radius: 999px;
+    border: 1px solid rgba(232,201,138,0.4);
+    background: transparent;
+    color: var(--gold-soft);
+    cursor: pointer;
+    transition: all 0.35s ease;
+  }
+  .btn:hover {
+    background: rgba(232,201,138,0.1);
+    border-color: var(--gold-soft);
+  }
+  .btn:focus-visible {
+    outline: 2px solid var(--gold-soft);
+    outline-offset: 3px;
+  }
+  .btn.hidden { display: none; }
+
+  .error {
+    color: var(--rose);
+    font-size: 0.82rem;
+    max-width: 320px;
+    margin-top: 18px;
+    line-height: 1.5;
+  }
+
+  /* --- Compliment --- */
+  .compliment-zone {
+    min-height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 420px;
+    padding: 0 20px;
+  }
+
+  .compliment {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(1.15rem, 3.4vw, 1.55rem);
+    line-height: 1.5;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 1.2s ease, transform 1.2s ease;
+  }
+  .compliment.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .compliment .quote-mark {
+    color: var(--gold);
+    opacity: 0.6;
+  }
+
+  .timer-note {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(244,237,225,0.3);
+    margin-top: 6px;
+  }
+
+  /* --- Love question overlay --- */
+  .love-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(13,11,17,0.92);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .love-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .love-card {
+    text-align: center;
+    padding: 20px;
+  }
+  .love-question {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: clamp(1.4rem, 5vw, 2rem);
+    margin-bottom: 34px;
+    color: var(--ink);
+  }
+  .love-btns {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    position: relative;
+    min-height: 60px;
+  }
+  .love-btn {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.95rem;
+    padding: 14px 34px;
+    border-radius: 999px;
+    border: 1px solid rgba(232,201,138,0.4);
+    background: transparent;
+    color: var(--gold-soft);
+    cursor: pointer;
+  }
+  .love-btn.yes {
+    background: rgba(232,201,138,0.15);
+  }
+  .love-btn.no {
+    position: relative;
+    transition: transform 0.25s ease;
+  }
+
+  .reveal-msg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: clamp(1.3rem, 5vw, 1.9rem);
+    color: var(--gold-soft);
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    z-index: 4;
+    padding: 0 30px;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  }
+  .reveal-msg.show { opacity: 1; }
+
+  @media (prefers-reduced-motion: reduce) {
+    video, .compliment { transition: none; }
+  }
+
+  footer {
+    position: absolute;
+    bottom: 22px;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: rgba(244,237,225,0.25);
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="banner"><img src="banner.jpg" alt=""></div>
+  <div class="eyebrow">A Small Ritual</div>
+  <h1>The Mirror</h1>
+  <p class="sub">Open your camera. Look at yourself the way someone who adores you would.</p>
+
+  <p class="verse">"I will praise thee; for I am fearfully and wonderfully made: marvellous are thy works; and that my soul knoweth right well."<cite>Psalm 139:14</cite></p>
+
+  <div class="mirror-wrap">
+    <div class="mirror-frame"></div>
+    <div class="glass">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="glass-sheen"></div>
+      <div class="scan-overlay" id="scanOverlay">
+        <div class="scan-sweep"></div>
+        <svg viewBox="0 0 300 375" preserveAspectRatio="none">
+          <line class="scan-line" x1="40" y1="60" x2="180" y2="140"/>
+          <line class="scan-line" x1="180" y1="140" x2="250" y2="90"/>
+          <line class="scan-line" x1="60" y1="220" x2="180" y2="140"/>
+          <line class="scan-line" x1="180" y1="140" x2="230" y2="260"/>
+          <line class="scan-line" x1="60" y1="220" x2="90" y2="310"/>
+
+          <rect class="scan-box" x="160" y="120" width="42" height="20" rx="2"/>
+          <text class="scan-label" x="164" y="133">0.9284</text>
+
+          <rect class="scan-box gold" x="30" y="45" width="34" height="16" rx="2"/>
+          <text class="scan-label" x="33" y="56">2.7443</text>
+
+          <rect class="scan-box rose" x="228" y="72" width="34" height="16" rx="2"/>
+          <text class="scan-label" x="231" y="83">5.2857</text>
+
+          <rect class="scan-box" x="45" y="205" width="34" height="16" rx="2"/>
+          <text class="scan-label" x="48" y="216">3.1429</text>
+
+          <rect class="scan-box gold" x="205" y="245" width="34" height="16" rx="2"/>
+          <text class="scan-label" x="208" y="256">6.0714</text>
+
+          <rect class="scan-box" x="70" y="295" width="34" height="16" rx="2"/>
+          <text class="scan-label" x="73" y="306">4.5714</text>
+        </svg>
+      </div>
+      <div class="placeholder" id="placeholder">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+          <path d="M23 7l-7 5 7 5V7z"/>
+          <rect x="1" y="5" width="15" height="14" rx="2"/>
+        </svg>
+        <div>Your camera stays on your device.<br>Nothing is saved, sent, or stored.</div>
+      </div>
+      <p class="reveal-msg" id="revealMsg">I can see all this Darnnn 👀</p>
+    </div>
+  </div>
+
+  <div class="love-overlay" id="loveOverlay">
+    <div class="love-card">
+      <p class="love-question" id="loveQuestion">Do you love me?</p>
+      <div class="love-btns" id="loveBtns">
+        <button class="love-btn yes" id="loveYes">Yes</button>
+        <button class="love-btn no" id="loveNo">No</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn" id="startBtn">Open the mirror</button>
+  <p class="error" id="errorMsg" style="display:none;"></p>
+
+  <div class="compliment-zone">
+    <p class="compliment" id="compliment"></p>
+  </div>
+  <div class="timer-note" id="timerNote" style="display:none;">a new one, every few seconds</div>
+
+  <footer>no login · nothing saved · just for you</footer>
+</div>
+
+<script>
+  const compliments = [
+    "You carry yourself like someone who knows exactly where they're going.",
+    "That's a face that's gotten through hard things and kept its warmth.",
+    "There's a steadiness in you that people notice, even when you don't.",
+    "You have the kind of presence that makes rooms feel a little more okay.",
+    "Whatever you're building, you're the right person to be building it.",
+    "You've earned every bit of the confidence you're about to feel.",
+    "The way you keep showing up for things is quietly remarkable.",
+    "You don't need permission to take up space. You already have it.",
+    "There's real strength behind that expression. It shows.",
+    "You are exactly enough, right now, as you are.",
+    "People remember how you make them feel. That's a gift.",
+    "You've survived every hard day so far. That's undefeated, actually.",
+    "That's the face of someone who follows through.",
+    "You're doing better than the voice in your head gives you credit for.",
+    "Something about you makes people feel safe being themselves.",
+    "You have taste, instincts, and timing — trust them today.",
+    "That reflection belongs to someone worth knowing.",
+    "You're allowed to be proud of how far you've come.",
+    "Theihnghil chhung che hi a rei dawn hle mai.",
+    "A reilo tiro?.",
+    "I chung chang hi CHATGPT ka hrilh thin.",
+    "Inkhawm dun ila?.",
+    "Aww a duhlo che nikha.",
+    "Ka mu theihlo ka rilru ana.",
+    "Mahse hi ani tawp mai ni.",
+    "Nun hi fair se, kraws ah kan awm vek ang.",
+    "Engtika emaw ala tawp vek dawn.",
+    "Siaha khaw chhuak dik tak ini.",
+    "Chengnuai 3 indawng dawn a ni.",
+    "Saptawnga ka dah ho hi den em.",
+    "I pawisa neilo beidawng hmel kha.",
+    "Mu ve thin rawh.",
+    "Ruaithehna i hriattheih hmel.",
+    "Chaw i heh hmel.",
+    "Ka ngai theih lutuk che.",
+    "i chaw ei chu a tui nikha.",
+    "I chhelo tak zet.",
+    "Inkhawm ngailo hmel i pu.",
+    "I sual hmel hle mai.",
+    "Beiraaa bialnuu hlui kha ini maw.",
+    "Awiio klasss ve klass 20.",
+    "In en tawh suh phone achhia ang.",
+    "Vango Kal Mai Teh.",
+    "Nauuu Patil i ni em.",
+    "Nau ka rai."
+  ];
+
+  const video = document.getElementById('video');
+  const placeholder = document.getElementById('placeholder');
+  const startBtn = document.getElementById('startBtn');
+  const errorMsg = document.getElementById('errorMsg');
+  const complimentEl = document.getElementById('compliment');
+  const timerNote = document.getElementById('timerNote');
+  const loveOverlay = document.getElementById('loveOverlay');
+  const loveYes = document.getElementById('loveYes');
+  const loveNo = document.getElementById('loveNo');
+  const loveBtns = document.getElementById('loveBtns');
+  const revealMsg = document.getElementById('revealMsg');
+
+  let usedIndices = [];
+  let rotateTimer = null;
+
+  function nextCompliment() {
+    if (usedIndices.length === compliments.length) usedIndices = [];
+    let idx;
+    do { idx = Math.floor(Math.random() * compliments.length); }
+    while (usedIndices.includes(idx));
+    usedIndices.push(idx);
+
+    complimentEl.classList.remove('show');
+    setTimeout(() => {
+      complimentEl.innerHTML = '<span class="quote-mark">“</span>' + compliments[idx] + '<span class="quote-mark">”</span>';
+      complimentEl.classList.add('show');
+    }, 400);
+  }
+
+  function dodgeNoButton() {
+    const maxX = 70, maxY = 24;
+    const x = (Math.random() * maxX * 2) - maxX;
+    const y = (Math.random() * maxY * 2) - maxY;
+    loveNo.style.transform = `translate(${x}px, ${y}px)`;
+  }
+
+  loveNo.addEventListener('click', dodgeNoButton);
+  loveNo.addEventListener('touchstart', (e) => { e.preventDefault(); dodgeNoButton(); }, { passive: false });
+
+  loveYes.addEventListener('click', () => {
+    loveOverlay.classList.remove('active');
+    revealMsg.classList.add('show');
+    document.getElementById('scanOverlay').classList.add('active');
+    startComplimentLoop();
+    setTimeout(() => {
+      revealMsg.classList.remove('show');
+    }, 7000);
+  });
+
+  function startComplimentLoop() {
+    timerNote.style.display = 'block';
+    nextCompliment();
+    rotateTimer = setInterval(nextCompliment, 6000);
+  }
+
+  async function openMirror() {
+    errorMsg.style.display = 'none';
+    startBtn.textContent = 'Opening…';
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      video.srcObject = stream;
+      video.classList.add('live');
+      placeholder.style.display = 'none';
+      startBtn.classList.add('hidden');
+      loveOverlay.classList.add('active');
+    } catch (err) {
+      startBtn.textContent = 'Open the mirror';
+      errorMsg.style.display = 'block';
+      errorMsg.textContent = "Couldn't access your camera — check your browser's permission settings and try again. (Or just take the compliments on faith.)";
+      loveOverlay.classList.add('active');
+    }
+  }
+
+  startBtn.addEventListener('click', openMirror);
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+</script>
+
+</body>
+</html>
