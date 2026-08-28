@@ -177,65 +177,18 @@
     z-index: 3;
   }
 
-  /* --- Digital scan HUD overlay --- */
+  /* --- Digital scan HUD overlay (canvas, face-tracked) --- */
   .scan-overlay {
     position: absolute;
     inset: 0;
     z-index: 4;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 1s ease;
-    overflow: hidden;
-  }
-  .scan-overlay.active { opacity: 1; }
-
-  .scan-overlay svg {
+    transition: opacity 0.6s ease;
     width: 100%;
     height: 100%;
   }
-
-  .scan-box {
-    fill: none;
-    stroke: #6fd6ff;
-    stroke-width: 1;
-    opacity: 0.55;
-    animation: scanFlicker 3.2s ease-in-out infinite;
-  }
-  .scan-box.gold { stroke: var(--gold-soft); }
-  .scan-box.rose { stroke: #ff8fa3; }
-
-  .scan-label {
-    font-family: 'Sora', monospace;
-    font-size: 6.5px;
-    fill: #9fe3ff;
-    opacity: 0.7;
-  }
-
-  .scan-line {
-    stroke: rgba(159, 227, 255, 0.35);
-    stroke-width: 0.6;
-  }
-
-  .scan-sweep {
-    position: absolute;
-    left: 0; right: 0;
-    height: 40%;
-    background: linear-gradient(180deg, transparent, rgba(111,214,255,0.12), transparent);
-    animation: sweepDown 4s linear infinite;
-  }
-
-  @keyframes scanFlicker {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 0.75; }
-  }
-  @keyframes sweepDown {
-    0% { top: -40%; }
-    100% { top: 100%; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .scan-box, .scan-sweep { animation: none; }
-  }
+  .scan-overlay.active { opacity: 1; }
 
   .placeholder {
     color: rgba(244,237,225,0.28);
@@ -400,13 +353,14 @@
     color: rgba(244,237,225,0.25);
   }
 </style>
+<script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
 </head>
 <body>
 
 <div class="stage">
   <div class="banner"><img src="banner.jpg" alt=""></div>
-  <div class="eyebrow">VANGOTHIE KINGDOM</div>
-  <h1>MI Â DIARY</h1>
+  <div class="eyebrow">A Small Ritual</div>
+  <h1>The Mirror</h1>
   <p class="sub">Open your camera. Look at yourself the way someone who adores you would.</p>
 
   <p class="verse">"I will praise thee; for I am fearfully and wonderfully made: marvellous are thy works; and that my soul knoweth right well."<cite>Psalm 139:14</cite></p>
@@ -416,34 +370,7 @@
     <div class="glass">
       <video id="video" autoplay playsinline muted></video>
       <div class="glass-sheen"></div>
-      <div class="scan-overlay" id="scanOverlay">
-        <div class="scan-sweep"></div>
-        <svg viewBox="0 0 300 375" preserveAspectRatio="none">
-          <line class="scan-line" x1="40" y1="60" x2="180" y2="140"/>
-          <line class="scan-line" x1="180" y1="140" x2="250" y2="90"/>
-          <line class="scan-line" x1="60" y1="220" x2="180" y2="140"/>
-          <line class="scan-line" x1="180" y1="140" x2="230" y2="260"/>
-          <line class="scan-line" x1="60" y1="220" x2="90" y2="310"/>
-
-          <rect class="scan-box" x="160" y="120" width="42" height="20" rx="2"/>
-          <text class="scan-label" x="164" y="133">0.9284</text>
-
-          <rect class="scan-box gold" x="30" y="45" width="34" height="16" rx="2"/>
-          <text class="scan-label" x="33" y="56">2.7443</text>
-
-          <rect class="scan-box rose" x="228" y="72" width="34" height="16" rx="2"/>
-          <text class="scan-label" x="231" y="83">5.2857</text>
-
-          <rect class="scan-box" x="45" y="205" width="34" height="16" rx="2"/>
-          <text class="scan-label" x="48" y="216">3.1429</text>
-
-          <rect class="scan-box gold" x="205" y="245" width="34" height="16" rx="2"/>
-          <text class="scan-label" x="208" y="256">6.0714</text>
-
-          <rect class="scan-box" x="70" y="295" width="34" height="16" rx="2"/>
-          <text class="scan-label" x="73" y="306">4.5714</text>
-        </svg>
-      </div>
+      <canvas class="scan-overlay" id="scanCanvas"></canvas>
       <div class="placeholder" id="placeholder">
         <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
           <path d="M23 7l-7 5 7 5V7z"/>
@@ -473,7 +400,7 @@
   </div>
   <div class="timer-note" id="timerNote" style="display:none;">a new one, every few seconds</div>
 
-  <footer>AZ25IVCOPYRIGHT· MI BO · ©️ Alrigh reserved</footer>
+  <footer>no login · nothing saved · just for you</footer>
 </div>
 
 <script>
@@ -567,7 +494,8 @@
   loveYes.addEventListener('click', () => {
     loveOverlay.classList.remove('active');
     revealMsg.classList.add('show');
-    document.getElementById('scanOverlay').classList.add('active');
+    scanCanvas.classList.add('active');
+    startFaceTracking();
     startComplimentLoop();
     setTimeout(() => {
       revealMsg.classList.remove('show');
@@ -580,6 +508,143 @@
     rotateTimer = setInterval(nextCompliment, 6000);
   }
 
+  /* ---------- Real face-tracked scan HUD ---------- */
+  const scanCanvas = document.getElementById('scanCanvas');
+  const scanCtx = scanCanvas.getContext('2d');
+  let faceModelsReady = false;
+  let faceLoopRunning = false;
+  const labelPool = ['0.9284','2.7443','5.2857','3.1429','6.0714','4.5714','1.6180','8.2001','0.4286','7.1143'];
+  const liveLabels = {};
+
+  function pickLabel(key) {
+    if (!liveLabels[key] || Math.random() < 0.15) {
+      liveLabels[key] = labelPool[Math.floor(Math.random() * labelPool.length)];
+    }
+    return liveLabels[key];
+  }
+
+  async function loadFaceModels() {
+    if (faceModelsReady || typeof faceapi === 'undefined') return;
+    const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+    try {
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+      ]);
+      faceModelsReady = true;
+    } catch (e) {
+      faceModelsReady = false; // silently fall back to no overlay
+    }
+  }
+
+  function resizeCanvas() {
+    const rect = video.getBoundingClientRect();
+    scanCanvas.width = rect.width;
+    scanCanvas.height = rect.height;
+  }
+
+  // Maps a point from the video's native pixel space into the displayed
+  // (object-fit: cover, mirrored) canvas space.
+  function mapPoint(x, y) {
+    const vw = video.videoWidth, vh = video.videoHeight;
+    const cw = scanCanvas.width, ch = scanCanvas.height;
+    if (!vw || !vh) return [0, 0];
+    const scale = Math.max(cw / vw, ch / vh);
+    const offX = (cw - vw * scale) / 2;
+    const offY = (ch - vh * scale) / 2;
+    const px = x * scale + offX;
+    const py = y * scale + offY;
+    // mirror horizontally to match the mirrored video
+    return [cw - px, py];
+  }
+
+  function drawHUD(landmarks) {
+    scanCtx.clearRect(0, 0, scanCanvas.width, scanCanvas.height);
+    if (!landmarks) return;
+
+    const pts = landmarks.positions;
+    const idx = {
+      leftEye: 37, rightEye: 44, noseTip: 30,
+      mouthL: 48, mouthR: 54, chin: 8,
+      jawL: 2, jawR: 14, browL: 19, browR: 24
+    };
+    const mapped = {};
+    Object.entries(idx).forEach(([k, i]) => {
+      const p = pts[i];
+      mapped[k] = mapPoint(p.x, p.y);
+    });
+
+    // connecting mesh lines
+    scanCtx.strokeStyle = 'rgba(159,227,255,0.4)';
+    scanCtx.lineWidth = 0.8;
+    const lines = [
+      ['leftEye','noseTip'], ['rightEye','noseTip'],
+      ['noseTip','mouthL'], ['noseTip','mouthR'],
+      ['mouthL','chin'], ['mouthR','chin'],
+      ['leftEye','browL'], ['rightEye','browR'],
+      ['jawL','mouthL'], ['jawR','mouthR']
+    ];
+    lines.forEach(([a,b]) => {
+      scanCtx.beginPath();
+      scanCtx.moveTo(mapped[a][0], mapped[a][1]);
+      scanCtx.lineTo(mapped[b][0], mapped[b][1]);
+      scanCtx.stroke();
+    });
+
+    // boxes + labels at key points
+    const colors = { blue:'#6fd6ff', gold:'#e8c98a', rose:'#ff8fa3' };
+    const boxSpecs = [
+      ['leftEye','blue'], ['rightEye','blue'],
+      ['noseTip','gold'], ['mouthL','rose'],
+      ['mouthR','rose'], ['chin','blue'],
+      ['jawL','gold'], ['jawR','gold']
+    ];
+    scanCtx.font = '9px Sora, monospace';
+    boxSpecs.forEach(([key, color]) => {
+      const [x, y] = mapped[key];
+      const w = 40, h = 16;
+      scanCtx.strokeStyle = colors[color];
+      scanCtx.globalAlpha = 0.55 + Math.random() * 0.2;
+      scanCtx.strokeRect(x - w/2, y - h/2 - 14, w, h);
+      scanCtx.fillStyle = '#cfeeff';
+      scanCtx.globalAlpha = 0.75;
+      scanCtx.fillText(pickLabel(key), x - w/2 + 3, y - 20);
+      scanCtx.globalAlpha = 1;
+      // small crosshair dot at the actual landmark
+      scanCtx.beginPath();
+      scanCtx.arc(x, y, 1.6, 0, Math.PI * 2);
+      scanCtx.fillStyle = colors[color];
+      scanCtx.fill();
+    });
+
+    // overall face bounding box
+    const box = landmarks.detection ? landmarks.detection.box : null;
+  }
+
+  async function faceLoop() {
+    if (!faceLoopRunning) return;
+    resizeCanvas();
+    if (faceModelsReady && video.readyState >= 2) {
+      try {
+        const result = await faceapi
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
+          .withFaceLandmarks();
+        drawHUD(result ? result.landmarks : null);
+      } catch (e) {
+        drawHUD(null);
+      }
+    }
+    setTimeout(faceLoop, 180);
+  }
+
+  async function startFaceTracking() {
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    await loadFaceModels();
+    faceLoopRunning = true;
+    faceLoop();
+  }
+
   async function openMirror() {
     errorMsg.style.display = 'none';
     startBtn.textContent = 'Opening…';
@@ -590,6 +655,7 @@
       placeholder.style.display = 'none';
       startBtn.classList.add('hidden');
       loveOverlay.classList.add('active');
+      loadFaceModels(); // start loading in background while the love question is answered
     } catch (err) {
       startBtn.textContent = 'Open the mirror';
       errorMsg.style.display = 'block';
